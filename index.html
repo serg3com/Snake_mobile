@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snake Game</title>
+
+<style>
+body {
+    margin: 0;
+    background: black;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: white;
+    font-family: Arial;
+}
+
+canvas {
+    background: #111;
+    touch-action: none;
+    margin-top: 10px;
+}
+
+.controls {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.row {
+    display: flex;
+    justify-content: center;
+}
+
+.top {
+    margin-bottom: 10px;
+}
+
+button {
+    width: 65px;
+    height: 65px;
+    font-size: 26px;
+    margin: 6px;
+    border-radius: 12px;
+    border: none;
+    background: #222;
+    color: white;
+}
+button:active {
+    background: #444;
+}
+</style>
+</head>
+
+<body>
+
+<h2 id="score">Score: 0</h2>
+
+<canvas id="game" width="400" height="400"></canvas>
+
+<div class="controls">
+    <div class="row top">
+        <button onclick="setDirection('up')">⬆️</button>
+    </div>
+
+    <div class="row bottom">
+        <button onclick="setDirection('left')">⬅️</button>
+        <button onclick="setDirection('down')">⬇️</button>
+        <button onclick="setDirection('right')">➡️</button>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const size = 20;
+const tileCount = canvas.width / size;
+
+let snake = [
+    {x: 10, y: 10},
+    {x: 10, y: 11},
+    {x: 10, y: 12}
+];
+
+let direction = "up";
+let food = randomFood();
+let score = 0;
+let speed = 120;
+let gameRunning = true;
+
+function gameLoop() {
+    if (!gameRunning) return;
+    update();
+    draw();
+    setTimeout(gameLoop, speed);
+}
+
+function update() {
+    let head = {...snake[0]};
+
+    if (direction === "up") head.y--;
+    if (direction === "down") head.y++;
+    if (direction === "left") head.x--;
+    if (direction === "right") head.x++;
+
+    // стены
+    if (head.x < 0 || head.y < 0 || head.x >= tileCount || head.y >= tileCount) {
+        gameOver("GAME OVER");
+        return;
+    }
+
+    // столкновение с собой
+    for (let part of snake) {
+        if (head.x === part.x && head.y === part.y) {
+            gameOver("GAME OVER");
+            return;
+        }
+    }
+
+    snake.unshift(head);
+
+    // еда
+    if (head.x === food.x && head.y === food.y) {
+        score++;
+        document.getElementById("score").innerText = "Score: " + score;
+        food = randomFood();
+        if (score >= 10) {
+            gameOver("YOU WIN!");
+        }
+    } else {
+        snake.pop();
+    }
+}
+
+function draw() {
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // еда
+    ctx.fillStyle = "red";
+    ctx.fillRect(food.x * size, food.y * size, size, size);
+
+    // змейка
+    ctx.fillStyle = "lime";
+    for (let part of snake) {
+        ctx.fillRect(part.x * size, part.y * size, size, size);
+    }
+}
+
+function randomFood() {
+    return {
+        x: Math.floor(Math.random() * tileCount),
+        y: Math.floor(Math.random() * tileCount)
+    };
+}
+
+function setDirection(newDir) {
+    if (newDir === "left" && direction !== "right") direction = "left";
+    if (newDir === "right" && direction !== "left") direction = "right";
+    if (newDir === "up" && direction !== "down") direction = "up";
+    if (newDir === "down" && direction !== "up") direction = "down";
+}
+
+function gameOver(text) {
+    gameRunning = false;
+    setTimeout(() => {
+        alert(text);
+        location.reload();
+    }, 100);
+}
+
+// свайпы
+let startX = 0;
+let startY = 0;
+
+canvas.addEventListener("touchstart", e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+});
+
+canvas.addEventListener("touchmove", e => {
+    let dx = e.touches[0].clientX - startX;
+    let dy = e.touches[0].clientY - startY;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 30) setDirection("right");
+        if (dx < -30) setDirection("left");
+    } else {
+        if (dy > 30) setDirection("down");
+        if (dy < -30) setDirection("up");
+    }
+});
+
+gameLoop();
+</script>
+
+</body>
+</html>
